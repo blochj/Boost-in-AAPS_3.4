@@ -1279,7 +1279,13 @@ class DetermineBasalBoost @Inject constructor(
                 // calibrated to a 7.24% base rate and reads far higher for the same risk, so
                 // comparing either to the other's thresholds is meaningless. What the field data
                 // is for is the ranking and the disagreement, not the level.
-                rT.mlHypoRiskShadow = round(it, 3)
+                // Rides in [reason] as a tag rather than as an RT field. Adding ANY field to the
+                // RT data class shifts register allocation in the legacy
+                // DetermineBasalBoostV3MLG3.determine_basal, which sits at the ART method-verifier
+                // limit, and trips a VerifyError at startup. That is not a theory: it is what the
+                // first build of this shadow did on 2026-09-02, and RT.kt has carried the warning
+                // since 2026-07-18. The KAIROS twin telemetry rides here for the same reason.
+                rT.reason.append("hyposhadow=${round(it, 3)}; ")
                 consoleError.add("ML hypo risk SHADOW (v13, not dosing): ${round(it * 100, 1)}%")
             }
             val mlMealLikely = mealModel?.predictMealLikelihood(

@@ -58,6 +58,7 @@ TRIO_TAG_RE = re.compile(
 
 
 TWIN_RE = re.compile(r"twin=([-\d.,]+)")
+HYPOSHADOW_RE = re.compile(r"hyposhadow=([-\d.]+)")
 PLATEAU_RE = re.compile(r"plateau=([^;]+);")
 # 2026-08-03 auto-config breadcrumbs, both replayed EVERY cycle so the DB always carries the
 # CURRENT state rather than the single cycle on which the derivation ran.
@@ -174,6 +175,21 @@ def _autordv(reason: str, field: str):
     except (ValueError, IndexError):
         return None
     return None
+
+
+def _hyposhadow(reason: str) -> Optional[float]:
+    """Shadow hypo-risk score, emitted as "hyposhadow=<0..1>;" once per cycle.
+
+    Absent where the shadow asset failed to load or the feature vector was short, both of
+    which return null rather than a score, so a null here is "no shadow" and never zero.
+    """
+    m = HYPOSHADOW_RE.search(reason or "")
+    if not m:
+        return None
+    try:
+        return float(m.group(1))
+    except ValueError:
+        return None
 
 
 def _twin(reason: str, i: int) -> Optional[float]:
@@ -636,7 +652,9 @@ def build_row(rec: dict, user_id: str) -> Optional[dict]:
         "ml_hypo_risk": sug.get("mlHypoRisk"),
         # 2026-09 refit, logged and never dosed on. NOT comparable to ml_hypo_risk by
         # level: different base-rate calibration, so it reads higher for the same risk.
-        "ml_hypo_risk_shadow": sug.get("mlHypoRiskShadow"),
+        # Read from a [reason] tag, not an RT field: RT cannot take another field without
+        # tripping the ART method verifier in the legacy V3MLG3 engine (see RT.kt).
+        "ml_hypo_risk_shadow": _hyposhadow(reason),
         "ml_meal_likely": sug.get("mlMealLikely"),
         # 2026-07-07 sensing hardening: which step feeds were live this cycle
         # ("phone+wear"|"phone"|"wear"|"none" — "none" = INACTIVE + sleep-in suppressed), and the
