@@ -33,6 +33,16 @@ is wrong.
 
 ## 2. It is not the insulin — the crash is not dose-driven
 
+> **WITHDRAWN 2026-08-13.** The dose-refutation argument in this section does not stand. It rested
+> on pooling insulin on board in absolute units across participants whose total daily dose spans
+> 16.3 to 57.6 U, one of them on U200, and the between-participant correlation of median IOB at
+> onset with that person's own low rate is -0.388, which pulls the pooled association toward
+> inversion. Standardised by each participant's own TDD and resampling participants, the figure is
+> AUC 0.549 (0.512 to 0.604) on 157 events from five users, with every participant above 0.5 and a
+> median IOB of 1.76 U where a low followed against 1.36 where none did. That is the ordinary
+> direction. The 15% against 23% low-rate contrast elsewhere in this report survives; the claim
+> that crashers carry LESS insulin does not. See `2026-08-postmeal-exercise-recheck/`.
+
 The natural explanation is dose stacking: the meal triggered a bolus, exercise then amplifies it,
 and the person crashes. If that were the mechanism, the people who crash should be carrying **more**
 insulin when the exercise starts. They carry **less**.

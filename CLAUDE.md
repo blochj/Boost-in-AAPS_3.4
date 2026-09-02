@@ -35,7 +35,7 @@ There is no glucodynamic simulator, so we cannot generate the counterfactual BG 
 
 ## Lab vs loop
 
-What doses is deterministic (state machine, multipliers, caps, composed brake-floor, rule-based sleep detector, a deterministic per-user auto-config derivation) plus two pre-trained ML models at inference. All the Bayesian/inferential machinery is offline decision-support that decides what gets built. See `backtesting/STATISTICAL_METHODS.md`.
+What doses is deterministic (state machine, multipliers, caps, composed brake-floor, rule-based sleep detector, a deterministic per-user auto-config derivation) plus two pre-trained ML models at inference. **The two models are not both restraining.** `mlHypoRisk` is hypo-directional on all four of its paths: it can trim a dose and cannot add one. `mlMealLikely` is dose-INCREASING on three: above 0.50 it releases the V1 G3 hold that gates the aggressive tiers, it carries weight 0.20 in the V5 meal-signal score whose states multiply the dose 0.3x to 1.8x, and above 0.30 it blocks the sleeping classification that would restrain overnight microboluses. Verified in source 2026-09-02; see `backtesting/reports/2026-09_boost_lgbm_methods.md`. All the Bayesian/inferential machinery is offline decision-support that decides what gets built. See `backtesting/STATISTICAL_METHODS.md`.
 
 ## Branch and commit workflow
 
