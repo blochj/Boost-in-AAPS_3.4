@@ -72,6 +72,10 @@ data class RT(
 
     // ML risk model fields (Boost V3ML only)
     var mlHypoRisk: Double? = null,             // P(hypo event in next 4h), 0.0-1.0
+    // Shadow score from the 2026-09 refit, logged and never acted on. NOT on the same
+    // scale as mlHypoRisk: it is calibrated to a different base rate and reads higher for
+    // the same risk. Compare rankings and disagreement, never levels.
+    var mlHypoRiskShadow: Double? = null,
     var mlRiskScale: Double? = null,            // SMB scaling factor applied (1.0 = no reduction)
 
     // Post-SMB risk gate (7.7) — second inference at projected post-SMB IOB

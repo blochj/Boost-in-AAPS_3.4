@@ -1210,6 +1210,7 @@ class DetermineBasalBoost @Inject constructor(
             // Windowed values are sourced from a 6-cycle ring buffer maintained by the
             // plugin; static values come from this cycle's algorithm state.
             val now = java.time.LocalTime.now().hour
+            var mlHypoRiskShadow: Double? = null
             val mlHypoRisk: Double? = run {
                 val rm = riskModel ?: return@run null
                 val featNames = rm.getFeatureNames() ?: return@run null
@@ -1262,6 +1263,9 @@ class DetermineBasalBoost @Inject constructor(
                     )
                     mlRingBuffer.push(current)
                     val features = BoostMlFeatureBuilder.build(featNames, current, mlRingBuffer, statics)
+                    // Shadow (2026-09-02): score the refit on the SAME vector, so any difference
+                    // between the two is the model and not the feature build. Delivers nothing.
+                    mlHypoRiskShadow = rm.predictShadow(features)
                     rm.predict(features)
                 }
             }
@@ -1269,6 +1273,14 @@ class DetermineBasalBoost @Inject constructor(
                 rT.mlHypoRisk = round(mlHypoRisk, 3)
                 consoleError.add("── ML Risk Model (observability only) ──────")
                 consoleError.add("ML hypo risk: ${round(mlHypoRisk * 100, 1)}%")
+            }
+            mlHypoRiskShadow?.let {
+                // Logged, never acted on. The two scores are on DIFFERENT scales: the refit is
+                // calibrated to a 7.24% base rate and reads far higher for the same risk, so
+                // comparing either to the other's thresholds is meaningless. What the field data
+                // is for is the ranking and the disagreement, not the level.
+                rT.mlHypoRiskShadow = round(it, 3)
+                consoleError.add("ML hypo risk SHADOW (v13, not dosing): ${round(it * 100, 1)}%")
             }
             val mlMealLikely = mealModel?.predictMealLikelihood(
                 cgmMgdl = bg,

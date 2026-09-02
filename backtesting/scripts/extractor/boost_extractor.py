@@ -634,6 +634,9 @@ def build_row(rec: dict, user_id: str) -> Optional[dict]:
         "anticip_mins_ex": _anticip(reason, 10, int), "anticip_mins_meal": _anticip(reason, 11, int),
         "anticip_n_ex": _anticip(reason, 12, int), "anticip_n_meal": _anticip(reason, 13, int),
         "ml_hypo_risk": sug.get("mlHypoRisk"),
+        # 2026-09 refit, logged and never dosed on. NOT comparable to ml_hypo_risk by
+        # level: different base-rate calibration, so it reads higher for the same risk.
+        "ml_hypo_risk_shadow": sug.get("mlHypoRiskShadow"),
         "ml_meal_likely": sug.get("mlMealLikely"),
         # 2026-07-07 sensing hardening: which step feeds were live this cycle
         # ("phone+wear"|"phone"|"wear"|"none" — "none" = INACTIVE + sleep-in suppressed), and the
@@ -748,6 +751,7 @@ CREATE TABLE IF NOT EXISTS {TABLE} (
     boostv5_age           double precision,
     boostv5_gatereduction text,
     ml_hypo_risk          double precision,
+    ml_hypo_risk_shadow   double precision,
     ml_meal_likely        double precision,
     v1_units              double precision,
     iob_iob              double precision,
