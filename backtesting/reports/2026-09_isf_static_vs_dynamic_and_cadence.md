@@ -71,6 +71,43 @@ basal rather than filled, and since arm A and arm B have more uncovered time tha
 would narrow the gap: at a flat 0.72 U/h the totals become 35.1, 34.4 and 40.6, an 18 per cent rise
 rather than 22.
 
+## Is the extra insulin a cadence effect, or did conditions call for it?
+
+The 22 per cent rise is compatible with two stories: the loop is more aggressive for a given state,
+or it met states that called for more insulin. Matching the arms on glucose separates them.
+
+| glucose mg/dL | 5 min U/hr | 1 min U/hr | difference (95% CI) |
+|---|---|---|---|
+| <70 | 0.000 | 0.000 | +0.000 (+0.000 to +0.000) |
+| 70-90 | 0.015 | 0.031 | +0.015 (-0.027 to +0.069) |
+| 90-110 | 0.092 | 0.314 | +0.224 (+0.000 to +0.426) |
+| 110-130 | 0.445 | 1.260 | +0.812 (+0.463 to +1.140) |
+| 130-160 | 1.644 | 2.155 | +0.461 (-0.770 to +1.458) |
+| 160-200 | 1.977 | 3.900 | +1.862 (+0.278 to +2.937) |
+| >200 | 2.758 | 3.094 | +0.486 (-0.820 to +2.203) |
+
+The 1-minute arm doses more in every band, and the interval excludes zero in three of them. Applying
+its dosing rates to the 5-minute arm's own distribution of glucose gives 33.4 U per 24 h of SMB
+against the 20.2 actually delivered, so roughly two thirds more microbolus insulin that is not
+explained by where glucose sat. The direction of the mean rules out the alternative story from the
+other side: arm C ran at a lower mean glucose than arm B, 120 against 129, so the extra insulin was
+not a response to running higher.
+
+The band that matters for hypoglycaemia is 110-130 mg/dL, which is 6.1 to 7.2 mmol/L and squarely in
+range. There the 1-minute loop delivers 1.26 U/h against 0.45, nearly three times as much insulin at
+a glucose that needs none of it. That is the most plausible mechanism for the extra time below 70.
+
+Holding trend as well as glucose leaves the pattern intact in most cells, and one is worth naming.
+Between 160 and 200 mg/dL with glucose falling, the 5-minute arm delivers 0.020 U/h and the
+1-minute arm 0.309. Dosing into a recovering high is the failure mode this programme has documented
+repeatedly as its own commonest route into a low, and the cadence change has made it about fifteen
+times more likely per unit time in that state.
+
+This is still a before-and-after on one person with carbohydrate unobserved, so it does not have the
+standing of a randomised comparison. What the matching does establish is that the extra insulin is a
+property of how the loop behaves at 1-minute cadence rather than of the conditions it happened to
+meet.
+
 ## What this does and does not establish
 
 The rise in time below range is not one bad night. Per local day in arm C it runs 1.69, 11.19, 6.29
