@@ -1,9 +1,9 @@
 # Pre-meal exercise mode: evidence base and what Boost already has
 
-Research note, 2026-09-02, on branch `dev`. This is a survey rather than a design. It sets out
-what the published guidance recommends before exercise when a meal is involved, what machinery
-already exists in the Boost fork, and what the programme's own measurements say about the
-problem. No option is recommended here.
+Research note, 2026-09-03. Sections 1 to 5 set out what the published guidance recommends
+before exercise when a meal is involved, what machinery already exists in the Boost fork, and
+what the programme's own measurements say about the problem. Section 6 states how the mode is
+built in the app and what each piece costs, since the survey on its own left that unanswered.
 
 Three decisions are already taken and shape what the survey covers. The trigger is user-declared,
 so the person tells the loop that exercise is coming, and detection appears below only as the
@@ -347,8 +347,8 @@ simplicity is worth something when the input is a person declaring an intention.
 
 ### 1.9 What the protocols specify, and what Boost could implement it with
 
-The design decision on levers is being taken elsewhere. This table states what the corpus
-specifies and names the mechanism that already exists, or does not.
+This table states what the corpus specifies and names the mechanism that already exists, or
+does not. Section 6.6 takes the same rows and says what promotion would change in each.
 
 | Protocol lever | Specified value | Boost mechanism | Exists today? |
 |---|---|---|---|
@@ -933,6 +933,123 @@ still, since it sees only the sessions somebody remembered to declare. The shado
 long enough to produce a per-user event count that supports a within-user comparison, and how
 long that is should be estimated from the observed declaration rate in the first weeks rather
 than assumed.
+
+## 6. How the mode is built in the app
+
+### 6.1 One session, start to finish
+
+At 17:00 you declare that a moderate aerobic run starts at 18:00 and will last 45 minutes. The
+declaration is written once and carries an identifier, the time it was made, the declared start,
+the type, the intensity, the expected duration, the route it arrived by, and the lead time it
+actually achieved, which is 60 minutes here and will often not be the lead time intended.
+
+From 17:00 the mode reads as being in the pre-exercise window. It computes a target of 8.3
+mmol/L. If a meal is detected before 18:00 it computes a reduced meal dose, and the size of that
+reduction depends entirely on which protocol row is being followed: EXTOD's flat rule takes half
+the dose off, the nearest cell of Riddell's table for moderate work lasting an hour takes off
+three quarters, and the AID statement takes off a quarter to a third. That is a threefold spread
+for one session, which is why the shadow records the row that produced each number rather than
+the number alone. At 18:00 the mode moves to the declared exercise period, and at 18:45 to the
+post-exercise window.
+
+Throughout, it writes what it would have done and delivers nothing.
+
+### 6.2 The declaration is the only real new construction
+
+Section 4.2 established that the gap is in what a declaration can carry rather than in the
+plumbing behind it. `TT.Reason` holds six values, `CUSTOM`, `HYPOGLYCEMIA`, `ACTIVITY`,
+`EATING_SOON`, `AUTOMATION` and `WEAR`, and a temporary target is a target, a duration and one
+of those, beginning at the moment it is set. All five declaration routes collapse to that
+payload. None of the four quantities the protocols are functions of can be expressed in it.
+
+So the first piece is a dialog beside `ui/dialogs/TempTargetDialog.kt` taking minutes until
+start, exercise type, intensity and expected duration. The type should populate the same
+vocabulary `HrActivityCalculator.ExerciseState` already uses, separating `VIGOROUS_AEROBIC`,
+`MODERATE_AEROBIC`, `LIGHT_AEROBIC` and `RESISTANCE`, so that the post-exercise recovery branch
+reads a declared type through the path it already uses for a classified one. Nothing downstream
+then needs to know whether a person or a heart-rate classifier supplied it.
+
+The record persists as a JSON blob in a new `StringKey`, following `ApsBoostSleepState` and
+`ApsBoostMealTimeHistory`. Blank or corrupt means no declaration, which is both the safe default
+and the behaviour every other blob in that file already has.
+
+### 6.3 The shadow sits beside one that already works
+
+The per-cycle shadow belongs next to the activity-load shadow in `OpenAPSBoostPlugin.kt`, which
+already computes a would-be ISF delta every cycle, logs it and doses nothing. Its fields are
+already extracted into the decision table, so the pattern for getting a shadow from the plugin to
+the database is established rather than invented.
+
+That block carries one lesson worth taking with it. It also seeds the Health Connect daily step
+total, so disabling it changes sleep-detector wake behaviour, which gates dosing. A shadow with a
+side effect is not a shadow. The exercise mode's version computes and writes, and touches nothing
+else.
+
+It runs on every cycle whether or not a declaration exists, because the undeclared cycles are the
+comparison set. Logging only declared sessions would leave no way to price a missed declaration,
+which is the quantity section 5.4 needs and which nobody has measured.
+
+### 6.4 Telemetry rides in the reason string
+
+The state and the would-be numbers leave as a tag appended to `reason`, parsed into columns in
+the extractor, in the same way the KAIROS twin forecast, the tranche telemetry and the shadow
+hypo-risk score already travel.
+
+This is not a stylistic preference. `RT` is constructed inside `determine_basal` in every engine
+in this repository, so one added field costs one register in each of them, and
+`DetermineBasalBoostV3MLG3.determine_basal` has no headroom: a build carrying one extra field
+crashed at startup on 2026-09-02, measured at 274 registers where 273 runs. The failure produces
+no stack trace and no log line, because it happens before the app starts. `RtFieldCountTest` now
+fails on any attempt, and the reason string costs nothing.
+
+### 6.5 The switch, and which direction it points
+
+The toggle is managed by `BoostV5AutoConfig` under the 2026-07-17 convention, which means adding
+it to `managedBooleanKeys` and `suggestionBoolean` in the plugin together with a derived flag on
+`V5Suggestion`, rather than shipping it off for every user to discover.
+
+The auto-enable gate is the part that needs stating rather than copying. The convention's strict
+time-below-range cut exists to stop insulin-adding features reaching people who are already
+running low. A pre-exercise target raise withholds insulin instead, so that gate is the wrong
+one, and the cost it has to be priced against is time above range rather than time below. The
+programme's own position is that a tightening and a loosening do not need to clear the same
+evidence bar, and this is a case where applying the symmetric bar would be the error.
+
+### 6.6 What promotion would change
+
+Almost nothing, which is the point of building it this way. Every lever in the section 1.9 table
+already has a live call site.
+
+| Lever | Call site today | What promotion changes |
+|---|---|---|
+| Raise the target before exercise | `insertAndCancelCurrentTemporaryTarget` with `TT.Reason.ACTIVITY`, fired only after exercise | Fire it from the declaration instead of from the recovery path |
+| End the raised target | `cancelCurrentTemporaryTargetIfAny`, already keyed on `TT.Reason.ACTIVITY` | Nothing; it already retracts |
+| Cut the pre-exercise meal dose | `MealActionMultiplier` | Add an exercise-conditioned path into a multiplier that is already live |
+| Cut basal before exercise | activity profile percent, driven by measured steps | Let a declaration drive the same scale |
+| No cut for anaerobic work | `HrActivityCalculator.ExerciseState` branch | Nothing; the declared type populates the field the branch already reads |
+| Stop the loop replacing the insulin | the high-target ladder defeat, unless `allowBoostWithHighTt` | Nothing functionally, though it disables the ladder outright where the AID statement asks for a 25 to 33 per cent scaling |
+
+Two items in that table are not levers and stay out. Carbohydrate top-ups by trend need a
+prompting mechanism that does not exist, and the advice against exercising within 24 hours of a
+severe hypoglycaemic episode is not a dosing action.
+
+One ordering constraint has no call site and is the only sequencing work in the list. The AID
+statement puts the target raise before the bolus reduction, which means the target write has to
+precede `MealHypothesis.step`. Both operations exist and neither currently runs before the other.
+
+### 6.7 What is not settled by building this
+
+The lever with the strongest external grading is the one the programme's own data likes least.
+Raising the target one to two hours ahead carries the AID statement's level A, and withdrawal at
+a 60-minute lead has been priced here at 0.70 lows prevented per high caused, against 1.05 for
+the reactive step withdrawal already shipping. Building the declaration path does not resolve
+that, and the shadow exists precisely because it is unresolved.
+
+What the declaration route has behind it is the announcement result rather than any lever in
+particular: announced with a bolus cut, announced with a full bolus, and unannounced gave 2.0,
+7.0 and 13.0 per cent time below 3.9 mmol/L. That gap is wider than the gap between any two
+detection strategies in the literature, and it is the reason the trigger is a person rather than
+a classifier. Tier SPECULATIVE throughout, since no part of this has been measured in the field.
 
 ## References
 
